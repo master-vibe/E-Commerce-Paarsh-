@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Date;
 
 @RestController
-@RequestMapping("/api/reports")
+@RequestMapping("reports")
 public class ReportController {
 
     private final ReportService reportService;
@@ -20,19 +20,19 @@ public class ReportController {
     }
 
     // Endpoint to generate today's sales report
-    @GetMapping("/sales/today")
+    @GetMapping("/today")
     public SalesReportDTO getTodaySalesReport() {
         return reportService.generateTodaySalesReport();
     }
 
     // Endpoint to generate yesterday's sales report
-    @GetMapping("/sales/yesterday")
+    @GetMapping("/yesterday")
     public SalesReportDTO getYesterdaySalesReport() {
         return reportService.generateYesterdaySalesReport();
     }
 
     // Endpoint to generate sales report for a specific date
-    @GetMapping("/sales/date")
+    @GetMapping("/date")
     public SalesReportDTO getSalesReportByDate(
             @RequestParam("date") @DateTimeFormat(pattern = "yyyy-MM-dd") Date reportDate) {
         return reportService.generateSalesReportForDate(reportDate, "SPECIFIC_DATE");

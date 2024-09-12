@@ -1,95 +1,105 @@
 package com.paarsh.admin_paarsh.controller;
 
+import com.nimbusds.jose.jwk.source.ImmutableSecret;
+import com.paarsh.admin_paarsh.dto.ForgotPasswordDTO;
 import com.paarsh.admin_paarsh.dto.LoginDTO;
 import com.paarsh.admin_paarsh.exceptions.UserNotFoundException;
 import com.paarsh.admin_paarsh.model.Admin;
+import com.paarsh.admin_paarsh.repository.AdminRepository;
 import com.paarsh.admin_paarsh.service.AdminService;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.neo4j.Neo4jProperties;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
+import org.springframework.security.oauth2.jwt.*;
+import org.springframework.web.bind.annotation.*;
+
+import java.time.Instant;
+import java.util.HashMap;
 
 @RestController
 public class AdminController {
 
+    @Value("${security.jwt.secret-key}")
+    private String jwtSecretKey;
+
+    @Value("${security.jwt.issuer}")
+    private String jwtIssuer;
+
     private final AdminService adminService;
+    private final AuthenticationManager authenticationManager;
 
     @Autowired
-    public AdminController(AdminService adminService) {
+    public AdminController(AdminService adminService, AuthenticationManager authenticationManager) {
         this.adminService = adminService;
+        this.authenticationManager = authenticationManager;
     }
 
     @PostMapping("/signUp")
-    public ResponseEntity<HttpStatus> signUp(@RequestBody Admin admin) {
+    public ResponseEntity<Object> signUp(@RequestBody Admin admin, HttpSession session) {
         try {
             System.out.println(admin.toString());
-            adminService.signUp(admin);
-            return new ResponseEntity<>(HttpStatus.OK);
+            admin = adminService.signUp(admin);
+            String jwtToken = createJwtToken(admin);
+            var response = new HashMap<String,Object>();
+            response.put("token",jwtToken);
+            response.put("user",admin);
+            return new ResponseEntity<>(response,HttpStatus.OK);
         } catch (Exception e) {
-            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+            return new ResponseEntity<>(e.getMessage(),HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
     @PostMapping("/login")
-    public ResponseEntity<HttpStatus> login(@RequestBody LoginDTO loginDTO, HttpServletResponse response, HttpServletRequest request) {
-        Cookie[] cookies = request.getCookies();
-        if (cookies != null) {
-            for (Cookie cookie : cookies) {
-                if (cookie.getName().equals("user-id")) {
-                    long userId = Long.parseLong(cookie.getValue());
-                    // You might want to return a specific response or handle this userId
-                    // For now, we'll just return OK if userId is present
-                    return new ResponseEntity<>(HttpStatus.OK);
-                }
-            }
+    public ResponseEntity<Object> login(@RequestBody LoginDTO loginDTO) {
+        try {
+            authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(loginDTO.getEmail(),loginDTO.getPassword()));
+
+            Admin admin = adminService.findByUsername(loginDTO.getEmail());
+
+            String jwtToken = createJwtToken(admin);
+
+            var response = new HashMap<String,Object>();
+            response.put("token",jwtToken);
+            response.put("user",admin);
+
+            return new ResponseEntity<>(response,HttpStatus.OK);
         }
-
-        long token = adminService.login(loginDTO.getEmail(), loginDTO.getPassword());
-        Cookie cookie = new Cookie("user-id", "");
-        cookie.setMaxAge(0); // delete the cookie initially
-
-        if (token > 0) {
-            cookie.setValue(String.valueOf(token));
-            cookie.setMaxAge(86400); // expires in 1 day
-            response.addCookie(cookie);
-            return new ResponseEntity<>(HttpStatus.OK);
-        } else {
-            response.addCookie(cookie); // set cookie with no value to delete
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        catch (Exception e){
+            return new ResponseEntity<>("User not found!",HttpStatus.NOT_FOUND);
         }
     }
 
     @PostMapping("/updateProfile")
-    public ResponseEntity<Admin> updateProfile(@RequestBody Admin updatedAdmin, HttpServletRequest request) {
-        // Extract user ID from cookies
-        Cookie[] cookies = request.getCookies();
-        if (cookies != null) {
-            for (Cookie cookie : cookies) {
-                if (cookie.getName().equals("user-id")) {
-                    try {
-                        Long userId = Long.parseLong(cookie.getValue());
-                        return ResponseEntity.ok(adminService.updateProfile(userId, updatedAdmin));
-                    } catch (UserNotFoundException e) {
-                        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-                    } catch (Exception e) {
-                        return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
-                    }
-                }
-            }
+    public ResponseEntity<Object> updateProfile(@RequestBody Admin updatedAdmin, Authentication authentication) {
+        var response = new HashMap<String,Object>();
+        response.put("Username",authentication.getName());
+        try {
+            Admin admin = adminService.findByUsername(authentication.getName());
+            admin = adminService.updateProfile(admin.getUserId(),updatedAdmin);
+            response.put("Admin",admin);
+            return new ResponseEntity<>(response,HttpStatus.OK);
+        } catch (Exception e) {
+            return new ResponseEntity<>(e.getMessage(),HttpStatus.INTERNAL_SERVER_ERROR);
         }
-
-        return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
     }
     @PostMapping("/forgot-password")
-    public ResponseEntity<HttpStatus> forgotPassword(@RequestBody String email) throws UserNotFoundException {
-        adminService.initiatePasswordReset(email);
-        return new ResponseEntity<>(HttpStatus.OK);
+    public ResponseEntity<Object> forgotPassword(@RequestBody ForgotPasswordDTO passwordDTO){
+        try {
+            adminService.initiatePasswordReset(passwordDTO.getEmail());
+            return new ResponseEntity<>(HttpStatus.OK);
+        } catch (Exception e) {
+            return new ResponseEntity<>(e.getMessage(),HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
     @PostMapping("/reset-password")
@@ -100,5 +110,22 @@ public class AdminController {
         } catch (IllegalArgumentException e) {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
+    }
+    private String createJwtToken(Admin admin){
+        Instant now = Instant.now();
+
+        JwtClaimsSet claims = JwtClaimsSet.builder()
+                .issuer(jwtIssuer)
+                .issuedAt(now)
+                .expiresAt(now.plusSeconds(24*3600))
+                .subject(admin.getUsername())
+                .build();
+        var encoder = new NimbusJwtEncoder(
+                new ImmutableSecret<>(jwtSecretKey.getBytes())
+        );
+        var params = JwtEncoderParameters.from(
+                JwsHeader.with(MacAlgorithm.HS256).build(), claims
+        );
+        return encoder.encode(params).getTokenValue();
     }
 }

@@ -28,6 +28,7 @@ public class ReportService {
         this.customerEnquiryRepository = customerEnquiryRepository;
     }
 
+
     public SalesReportDTO generateSalesReportForDate(Date reportDate, String reportType) {
         List<Order> orders = orderRepository.findByOrderDate(reportDate);
         return generateSalesReport(orders, reportDate, reportType);

@@ -1,7 +1,10 @@
 package com.paarsh.admin_paarsh.dto;
 
+import org.springframework.stereotype.Component;
+
 import java.util.Date;
 
+@Component
 public class SalesReportDTO {
 
     private Date reportDate;

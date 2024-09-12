@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import javax.swing.text.html.parser.Entity;
 import java.util.List;
 
 @RestController
@@ -49,10 +50,10 @@ public class OrderController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteOrder(@PathVariable Long id) {
+    public ResponseEntity<String> deleteOrder(@PathVariable Long id) {
         try {
             orderService.deleteOrder(id);
-            return ResponseEntity.noContent().build();
+            return ResponseEntity.ok("Order Deleted");
         } catch (Exception e) {
             return ResponseEntity.notFound().build();
         }

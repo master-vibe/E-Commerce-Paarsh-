@@ -1,35 +1,40 @@
 package com.paarsh.admin_paarsh.service;
 
+import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
-import io.jsonwebtoken.Claims;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 
 import java.util.Date;
 
-@Service
+@Component
 public class JwtService {
 
-    private final String secretKey = "paarshInfoTech_SecretKey"; // Use a strong secret key
+    private final String secretKey = "your_secret_key"; // Change this to a more secure key
+    private final long expirationTime = 86400000; // 1 day in milliseconds
 
-    public String generateToken(String username) {
+    public String generateToken(String userId) {
         return Jwts.builder()
-                .setSubject(username)
-                .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60)) // 1 hour expiration
-                .signWith(SignatureAlgorithm.HS256, secretKey)
+                .setSubject(userId)
+                .setExpiration(new Date(System.currentTimeMillis() + expirationTime))
+                .signWith(SignatureAlgorithm.HS512, secretKey)
                 .compact();
     }
 
-    public Claims parseToken(String token) {
-        return Jwts.parserBuilder()
+    public Claims getClaimsFromToken(String token) {
+        return Jwts.parser()
                 .setSigningKey(secretKey)
                 .build()
-                .parseClaimsJws(token)
+                .parseSignedClaims(token)
                 .getBody();
     }
 
-    public String getUsernameFromToken(String token) {
-        return parseToken(token).getSubject();
+    public boolean isTokenExpired(String token) {
+        Date expiration = getClaimsFromToken(token).getExpiration();
+        return expiration.before(new Date());
+    }
+
+    public boolean validateToken(String token, String userId) {
+        return (userId.equals(getClaimsFromToken(token).getSubject()) && !isTokenExpired(token));
     }
 }

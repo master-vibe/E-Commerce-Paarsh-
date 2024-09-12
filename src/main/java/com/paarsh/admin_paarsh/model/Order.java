@@ -19,7 +19,7 @@ public class Order {
     private Double totalAmount;
 
     @Column(nullable = false)
-    @Temporal(TemporalType.TIMESTAMP)
+    @Temporal(TemporalType.DATE)
     private Date orderDate;
 
     @Column(nullable = false)
