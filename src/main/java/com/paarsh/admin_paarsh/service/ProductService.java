@@ -55,7 +55,7 @@ public class ProductService {
     // Get products in customer’s cart (assuming there's a method to get cart items)
     // Note: Implementation depends on how cart items are managed
     // For simplicity, assume you have a CartService with a method to get products in a cart
-    // public List<Product> getProductsInCart(Long customerId) {
-    //     return cartService.getProductsInCart(customerId);
-    // }
+//     public List<Product> getProductsInCart(Long customerId) {
+//         return cartService.getProductsInCart(customerId);
+//     }
 }

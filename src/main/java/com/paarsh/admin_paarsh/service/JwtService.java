@@ -11,9 +11,10 @@ import java.util.Date;
 public class JwtService {
 
     private final String secretKey = "your_secret_key"; // Change this to a more secure key
-    private final long expirationTime = 86400000; // 1 day in milliseconds
 
     public String generateToken(String userId) {
+        // 1 day in milliseconds
+        long expirationTime = 60000;
         return Jwts.builder()
                 .setSubject(userId)
                 .setExpiration(new Date(System.currentTimeMillis() + expirationTime))

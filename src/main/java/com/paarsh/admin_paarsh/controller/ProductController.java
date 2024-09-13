@@ -45,6 +45,7 @@ public class ProductController {
 
     // Update an existing product
     @PutMapping("/{id}")
+
     public ResponseEntity<Product> updateProduct(@PathVariable Long id, @RequestBody Product product) {
         try {
             product.setId(id);  // Ensure the product ID is set correctly

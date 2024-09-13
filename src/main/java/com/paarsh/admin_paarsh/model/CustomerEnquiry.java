@@ -1,7 +1,7 @@
+// CustomerEnquiry.java
 package com.paarsh.admin_paarsh.model;
 
 import jakarta.persistence.*;
-
 
 @Entity
 @Table(name = "customer_enquiries")
@@ -18,6 +18,10 @@ public class CustomerEnquiry {
     @Column(name = "created_at", nullable = false, updatable = false)
     @Temporal(TemporalType.TIMESTAMP)
     private java.util.Date createdAt;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
+    private User user;
 
     public CustomerEnquiry() {
     }
@@ -63,5 +67,12 @@ public class CustomerEnquiry {
     public void setCreatedAt(java.util.Date createdAt) {
         this.createdAt = createdAt;
     }
-}
 
+    public User getUser() {
+        return user;
+    }
+
+    public void setUser(User user) {
+        this.user = user;
+    }
+}
