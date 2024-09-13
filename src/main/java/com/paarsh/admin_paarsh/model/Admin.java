@@ -1,143 +1,161 @@
-package com.paarsh.admin_paarsh.model;
+    package com.paarsh.admin_paarsh.model;
 
-import jakarta.persistence.*;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.userdetails.UserDetails;
+    import com.fasterxml.jackson.annotation.JsonIgnore;
+    import jakarta.persistence.*;
+    import org.springframework.security.core.GrantedAuthority;
+    import org.springframework.security.core.authority.SimpleGrantedAuthority;
+    import org.springframework.security.core.userdetails.UserDetails;
 
-import java.time.LocalDateTime;
-import java.util.Collection;
+    import java.time.LocalDateTime;
+    import java.util.Collection;
+    import java.util.Collections;
 
-@Entity
-@Table(name = "admin")
-public class Admin implements UserDetails {
-    @Id
-    private String userId;
+    @Entity
+    @Table(name = "admin")
+    public class Admin implements UserDetails {
+        @JsonIgnore
+        @Id
+        private String userId;
 
-    @Column(nullable = false, length = 100)
-    private String name;
+        @Column(nullable = false, length = 100)
+        private String name;
 
-    @Column(unique = true, nullable = false, length = 100)
-    private String email;
+        @Column(unique = true, nullable = false, length = 100)
+        private String email;
 
-    @Column(length = 15)
-    private String mobile;
 
-    @Column(nullable = false)
-    private String password;
+        @Column(length = 15)
+        private String mobile;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
+        @Column(nullable = false)
+        private String password;
 
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
+        @Column(nullable = false)
+        private String role;
 
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
+        @Column(name = "created_at", nullable = false, updatable = false)
+        private LocalDateTime createdAt;
+
+        @Column(name = "updated_at")
+        private LocalDateTime updatedAt;
+
+        @PrePersist
+        protected void onCreate() {
+            createdAt = LocalDateTime.now();
+        }
+
+        @PreUpdate
+        protected void onUpdate() {
+            updatedAt = LocalDateTime.now();
+        }
+
+        // Getters and Setters
+        public String getUserId() {
+            return userId;
+        }
+
+        public void setUserId(String userId) {
+            this.userId = userId;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public void setName(String name) {
+            this.name = name;
+        }
+
+        public String getEmail() {
+            return email;
+        }
+
+        public void setEmail(String email) {
+            this.email = email;
+        }
+
+        public String getMobile() {
+            return mobile;
+        }
+
+        public void setMobile(String mobile) {
+            this.mobile = mobile;
+        }
+
+        @Override
+        public Collection<? extends GrantedAuthority> getAuthorities() {
+            return null;
+        }
+
+        public String getPassword() {
+            return password;
+        }
+
+        @Override
+        public String getUsername() {
+            return this.email;
+        }
+
+        @Override
+        public boolean isAccountNonExpired() {
+            return true;
+        }
+
+        @Override
+        public boolean isAccountNonLocked() {
+            return true;
+        }
+
+        @Override
+        public boolean isCredentialsNonExpired() {
+            return true;
+        }
+
+        @Override
+        public boolean isEnabled() {
+            return true;
+        }
+
+        public void setPassword(String password) {
+            this.password = password;
+        }
+
+        public LocalDateTime getCreatedAt() {
+            return createdAt;
+        }
+
+        public void setCreatedAt(LocalDateTime createdAt) {
+            this.createdAt = createdAt;
+        }
+
+        public LocalDateTime getUpdatedAt() {
+            return updatedAt;
+        }
+
+        public void setUpdatedAt(LocalDateTime updatedAt) {
+            this.updatedAt = updatedAt;
+        }
+
+        public String getRole() {
+            return role;
+        }
+
+        public void setRoles(String role) {
+            if (!role.equals("ROLE_ADMIN") && !role.equals("ROLE_USER")) {
+                throw new IllegalArgumentException("Role must be either ROLE_ADMIN or ROLE_USER");
+            }
+            this.role = role;
+        }
+        @Override
+        public String toString() {
+            return "Admin{" +
+                    "userId=" + userId +
+                    ", name='" + name + '\'' +
+                    ", email='" + email + '\'' +
+                    ", mobile='" + mobile + '\'' +
+                    ", password='" + password + '\'' +
+                    ", createdAt=" + createdAt +
+                    ", updatedAt=" + updatedAt +
+                    '}';
+        }
     }
-
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
-    }
-
-    // Getters and Setters
-    public String getUserId() {
-        return userId;
-    }
-
-    public void setUserId(String userId) {
-        this.userId = userId;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public void setEmail(String email) {
-        this.email = email;
-    }
-
-    public String getMobile() {
-        return mobile;
-    }
-
-    public void setMobile(String mobile) {
-        this.mobile = mobile;
-    }
-
-    @Override
-    public Collection<? extends GrantedAuthority> getAuthorities() {
-        return null;
-    }
-
-    public String getPassword() {
-        return password;
-    }
-
-    @Override
-    public String getUsername() {
-        return this.email;
-    }
-
-    @Override
-    public boolean isAccountNonExpired() {
-        return true;
-    }
-
-    @Override
-    public boolean isAccountNonLocked() {
-        return true;
-    }
-
-    @Override
-    public boolean isCredentialsNonExpired() {
-        return true;
-    }
-
-    @Override
-    public boolean isEnabled() {
-        return true;
-    }
-
-    public void setPassword(String password) {
-        this.password = password;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public LocalDateTime getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(LocalDateTime updatedAt) {
-        this.updatedAt = updatedAt;
-    }
-
-    @Override
-    public String toString() {
-        return "Admin{" +
-                "userId=" + userId +
-                ", name='" + name + '\'' +
-                ", email='" + email + '\'' +
-                ", mobile='" + mobile + '\'' +
-                ", password='" + password + '\'' +
-                ", createdAt=" + createdAt +
-                ", updatedAt=" + updatedAt +
-                '}';
-    }
-}

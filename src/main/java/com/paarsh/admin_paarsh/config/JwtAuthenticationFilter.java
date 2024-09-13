@@ -1,25 +1,17 @@
 package com.paarsh.admin_paarsh.config;
 
-import com.nimbusds.jose.jwk.source.ImmutableSecret;
-import com.paarsh.admin_paarsh.service.AdminService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.oauth2.jwt.*;
-import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+import java.io.BufferedReader;
 import java.io.IOException;
-import java.time.Duration;
 import java.time.Instant;
-import java.util.HashMap;
 
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
@@ -37,27 +29,20 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-
-        System.out.println("Inside Internal Filter>>>>>>>>>>>>>"+request.getRequestURI() );
+        System.out.println("Inside Internal Filter>>>>>>>>>>>>>\n" + request.getRequestURI());
         String authHeader = request.getHeader("Authorization");
         String token = null;
-
+        boolean authorization = false;
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             token = authHeader.substring(7);
-            // Extract username from token, you can use JwtDecoder here
             try {
                 Jwt decodedJwt = jwtDecoder.decode(token);
-
-                Instant expiresAt = decodedJwt.getExpiresAt();
-
-                logger.error(expiresAt);
-
-
+                authorization=true;
             } catch (Exception e) {
-//                response.setStatus(HttpServletResponse.SC_FORBIDDEN);
-                logger.error("JWT decoding failed: {}");
+                logger.error("JWT decoding failed: {}",e.getCause());
             }
         }
         filterChain.doFilter(request, response);
+        response.setStatus(authorization? response.getStatus():HttpServletResponse.SC_NOT_FOUND);
     }
 }

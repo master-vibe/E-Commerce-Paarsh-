@@ -21,11 +21,14 @@ import java.util.UUID;
 public class AdminService {
     private final AdminRepository adminRepository;
     private final PasswordResetTokenRepository passwordResetTokenRepository;
+    private  final PasswordEncoder passwordEncoder;
+
     private final EmailService emailService;
     @Autowired
-    public AdminService(AdminRepository adminRepository, PasswordResetTokenRepository passwordResetTokenRepository, EmailService emailService) {
+    public AdminService(AdminRepository adminRepository, PasswordResetTokenRepository passwordResetTokenRepository, PasswordEncoder passwordEncoder, EmailService emailService) {
         this.adminRepository = adminRepository;
         this.passwordResetTokenRepository = passwordResetTokenRepository;
+        this.passwordEncoder = passwordEncoder;
         this.emailService = emailService;
     }
 
@@ -34,7 +37,8 @@ public class AdminService {
             throw new UserAlreadyExitsException("User already exists with username "+admin.getEmail());
         }
         admin.setUserId(UUID.randomUUID().toString());
-        admin.setPassword(hashPassword(admin.getPassword()));
+        admin.setPassword(passwordEncoder.encode(admin.getPassword()));
+        admin.setRoles(admin.getRole());
 
         adminRepository.save(admin);
         return admin;
@@ -49,9 +53,8 @@ public class AdminService {
         existingUser.setMobile(updatedUser.getMobile());
 
         if (updatedUser.getPassword() != null && !updatedUser.getPassword().isEmpty()) {
-            existingUser.setPassword(hashPassword(updatedUser.getPassword()));
+            existingUser.setPassword(passwordEncoder.encode(updatedUser.getPassword()));
         }
-
         return adminRepository.save(existingUser);
     }
 
@@ -64,7 +67,9 @@ public class AdminService {
     public void initiatePasswordReset(String email) throws UserNotFoundException {
         Admin admin = adminRepository.findByEmail(email)
                 .orElseThrow(() -> new UserNotFoundException("No user found with email " + email));
-
+        System.out.println("______________Forgot this______________");
+        System.out.println("Email>>>>>>>>>>>>>>>>>>>>"+admin.getEmail());
+        System.out.println("Password>>>>>>>>>>>>>>>>>"+admin.getPassword());
         // Generate a unique token
         try {
             String token = UUID.randomUUID().toString();
@@ -72,7 +77,7 @@ public class AdminService {
             passwordResetTokenRepository.save(resetToken);
 
             // Send an email with the reset link
-            String resetLink = "http://localhost:8080/reset-password?token=" + token;
+            String resetLink = "http://localhost:5173/reset-password?token=" + token;
             emailService.sendSimpleMessage(admin.getEmail(), "Password Reset Request", "To reset your password, click the following link: " + resetLink);
         } catch (MailIDDoesNotExistsExecption e) {
             throw new MailIDDoesNotExistsExecption(e.getMessage());
@@ -80,20 +85,21 @@ public class AdminService {
     }
 
     public void resetPassword(String token, String newPassword) {
+        System.out.println("Password Entered>>>>>>>>>>>>>>>"+newPassword);
         PasswordResetToken resetToken = passwordResetTokenRepository.findByToken(token)
                 .orElseThrow(() -> new IllegalArgumentException("Invalid token"));
 
         Admin admin = resetToken.getAdmin();
-        admin.setPassword(hashPassword(newPassword));
+        System.out.println("__________________Saving this__________");
+        System.out.println("Email>>>>>>>>>>>>>>>>>>>>"+admin.getEmail());
+        System.out.println("Password Before>>>>>>>>>>>>>>>>>"+admin.getPassword());
+        admin.setPassword(passwordEncoder.encode(newPassword));
+        System.out.println("Password After Encoding>>>>>>>>>>>>>>>>>"+admin.getPassword());
+
         adminRepository.save(admin);
 
-        // Remove the used token
         passwordResetTokenRepository.delete(resetToken);
     }
 
-    private String hashPassword(String password) {
-        PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
-        return  passwordEncoder.encode(password);
-    }
 
 }

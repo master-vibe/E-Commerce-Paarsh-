@@ -22,6 +22,7 @@ public class SecurityCustomUserDetailService implements UserDetailsService {
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         Admin admin = adminRepository.findByEmail(username).orElseThrow(()-> new UsernameNotFoundException("Username Not found with this Email ID"+username));
+        System.out.println(admin.getPassword());
         return User.withUsername(admin.getUsername())
                 .password(admin.getPassword())
                 .build();

@@ -14,6 +14,7 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
@@ -43,6 +44,7 @@ public class SecurityConfig  {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth->auth
+                        .requestMatchers("/reset-password*").permitAll()
                         .requestMatchers("/auth").permitAll()
                         .requestMatchers("/reports/").permitAll()
                         .requestMatchers("/login").permitAll()
@@ -93,5 +95,9 @@ public class SecurityConfig  {
         provider.setPasswordEncoder(new BCryptPasswordEncoder());
 
         return new ProviderManager(provider);
+    }
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
     }
 }
